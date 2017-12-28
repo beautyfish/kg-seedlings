@@ -1,6 +1,6 @@
 import numpy as np
 from keras.models import Sequential
-from keras.layers import Dense, Conv2D, MaxPooling2D, Flatten, GlobalAveragePooling2D
+from keras.layers import Dense, Conv2D, MaxPooling2D, Flatten, GlobalAveragePooling2D, BatchNormalization, Activation, Dropout
 from keras.callbacks import ModelCheckpoint
 from keras.preprocessing.image import ImageDataGenerator
 from keras.preprocessing import image
@@ -38,15 +38,24 @@ validation_generator = val_datagen.flow_from_directory(
 
 # Model definition
 model = Sequential()
-model.add(Conv2D(32, (3, 3), activation='relu', input_shape=train_generator.image_shape))
-model.add(Conv2D(32, (3, 3), activation='relu'))
+model.add(Conv2D(16, (3, 3), input_shape=train_generator.image_shape))
+model.add(BatchNormalization())
+model.add(Activation('relu'))
+model.add(Conv2D(16, (3, 3)))
+model.add(BatchNormalization())
+model.add(Activation('relu'))
 model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Dropout(0.2))
 
-model.add(Conv2D(16, (3, 3), activation='relu'))
+model.add(Conv2D(32, (3, 3)))
+model.add(BatchNormalization())
+model.add(Activation('relu'))
 model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Dropout(0.2))
 
-model.add(Conv2D(8, (3, 3), activation='relu'))
+model.add(Conv2D(64, (3, 3), activation='relu'))
 model.add(Flatten())
+model.add(Dropout(0.2))
 
 model.add(Dense(12, activation='softmax'))
 
@@ -58,15 +67,14 @@ model.compile(loss='categorical_crossentropy', optimizer='Adam', metrics=['accur
 checkpointer = ModelCheckpoint(filepath='saved_models/weights.best.hdf5',
                                verbose=1, save_best_only=True)
 
-'''
 history = model.fit_generator(train_generator,
         steps_per_epoch=3831 // batch_size,
         epochs=epochs,
         validation_data=validation_generator,
         validation_steps=919 // batch_size,
-        verbose=2,
+        verbose=1,
         callbacks=[checkpointer])
-'''
+
 model.load_weights('saved_models/weights.best.hdf5')
 
 seedlings_names = [item[11:] for item in sorted(glob("data/train/*"))]
