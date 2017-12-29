@@ -10,12 +10,12 @@ import os
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-batch_size = 32
-epochs = 20
+batch_size = 28
+epochs = 40
 target_size = (200, 200)
 
 # Data import
-train_datagen = ImageDataGenerator(rotation_range=40,
+train_datagen = ImageDataGenerator(rotation_range=25,
                                    rescale=1./255,
                                    shear_range=0.2,
                                    zoom_range=0.2,
@@ -26,15 +26,15 @@ val_datagen = ImageDataGenerator(rescale=1./255)
 
 train_generator = train_datagen.flow_from_directory(
     'data/train',  # this is the target directory
-    target_size=target_size,  # all images will be resized to 150x150
+    target_size=target_size,
     batch_size=batch_size,
-    class_mode='categorical')  # since we use binary_crossentropy loss, we need binary labels
+    class_mode='categorical')
 
 validation_generator = val_datagen.flow_from_directory(
     'data/validation',  # this is the target directory
-    target_size=target_size,  # all images will be resized to 150x150
+    target_size=target_size,
     batch_size=batch_size,
-    class_mode='categorical')  # since we use binary_crossentropy loss, we need binary labels
+    class_mode='categorical')
 
 # Model definition
 model = Sequential()
@@ -53,8 +53,36 @@ model.add(Activation('relu'))
 model.add(MaxPooling2D(pool_size=(2, 2)))
 model.add(Dropout(0.2))
 
-model.add(Conv2D(64, (3, 3), activation='relu'))
-model.add(Flatten())
+model.add(Conv2D(64, (3, 3)))
+model.add(BatchNormalization())
+model.add(Activation('relu'))
+model.add(Dropout(0.2))
+
+model.add(Conv2D(128, (3, 3)))
+model.add(BatchNormalization())
+model.add(Activation('relu'))
+model.add(MaxPooling2D())
+model.add(Dropout(0.2))
+
+model.add(Conv2D(256, (3, 3)))
+model.add(BatchNormalization())
+model.add(Activation('relu'))
+model.add(MaxPooling2D())
+model.add(Dropout(0.2))
+
+model.add(Conv2D(512, (3, 3)))
+model.add(BatchNormalization())
+model.add(Activation('relu'))
+model.add(GlobalAveragePooling2D())
+model.add(Dropout(0.2))
+
+model.add(Dense(256, activation='relu'))
+model.add(Dropout(0.2))
+
+model.add(Dense(128, activation='relu'))
+model.add(Dropout(0.2))
+
+model.add(Dense(64, activation='relu'))
 model.add(Dropout(0.2))
 
 model.add(Dense(12, activation='softmax'))
@@ -68,10 +96,10 @@ checkpointer = ModelCheckpoint(filepath='saved_models/weights.best.hdf5',
                                verbose=1, save_best_only=True)
 
 history = model.fit_generator(train_generator,
-        steps_per_epoch=3831 // batch_size,
+        steps_per_epoch=3839 // batch_size,
         epochs=epochs,
         validation_data=validation_generator,
-        validation_steps=919 // batch_size,
+        validation_steps=911 // batch_size,
         verbose=1,
         callbacks=[checkpointer])
 
